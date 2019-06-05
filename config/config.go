@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -8,13 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"os"
-
-	cfg "github.com/infinityworks/go-common/config"
 )
 
 // Config struct holds all of the runtime confgiguration for the application
 type Config struct {
-	*cfg.BaseConfig
 	APIURL        string
 	Repositories  string
 	Organisations string
@@ -22,39 +20,42 @@ type Config struct {
 	APITokenEnv   string
 	APITokenFile  string
 	APIToken      string
+	MetricsPath   string
+	ListenPort    string
 	TargetURLs    []string
 }
 
 // Init populates the Config struct based on environmental runtime configuration
 func Init() Config {
 
-	ac := cfg.Init()
-	url := cfg.GetEnv("API_URL", "https://api.github.com")
+	url := "https://api.github.com"
 	repos := os.Getenv("REPOS")
 	orgs := os.Getenv("ORGS")
 	users := os.Getenv("USERS")
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	token, err := getAuth(tokenEnv, tokenFile)
+
+	if err != nil {
+		log.Errorf("Error initialising Configuration, Error: %v", err)
+	}
+
 	scraped, err := getScrapeURLs(url, repos, orgs, users)
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
 	}
 
-	appConfig := Config{
-		&ac,
-		url,
-		repos,
-		orgs,
-		users,
-		tokenEnv,
-		tokenFile,
-		token,
-		scraped,
+	return Config{
+		APIURL:        url,
+		Repositories:  repos,
+		Organisations: orgs,
+		Users:         users,
+		APITokenEnv:   tokenEnv,
+		APITokenFile:  tokenFile,
+		APIToken:      token,
+		TargetURLs:    scraped,
 	}
-
-	return appConfig
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -71,29 +72,23 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 	}
 
 	// Append repositories to the array
-	if repos != "" {
-		rs := strings.Split(repos, ", ")
-		for _, x := range rs {
-			y := fmt.Sprintf("%s/repos/%s%s", apiURL, x, opts)
-			urls = append(urls, y)
-		}
+	rs := strings.Split(repos, ", ")
+	for _, x := range rs {
+		y := fmt.Sprintf("%s/repos/%s%s", apiURL, x, opts)
+		urls = append(urls, y)
 	}
 
 	// Append github orginisations to the array
-	if orgs != "" {
-		o := strings.Split(orgs, ", ")
-		for _, x := range o {
-			y := fmt.Sprintf("%s/orgs/%s/repos%s", apiURL, x, opts)
-			urls = append(urls, y)
-		}
+	o := strings.Split(orgs, ", ")
+	for _, x := range o {
+		y := fmt.Sprintf("%s/orgs/%s/repos%s", apiURL, x, opts)
+		urls = append(urls, y)
 	}
 
-	if users != "" {
-		us := strings.Split(users, ", ")
-		for _, x := range us {
-			y := fmt.Sprintf("%s/users/%s/repos%s", apiURL, x, opts)
-			urls = append(urls, y)
-		}
+	us := strings.Split(users, ", ")
+	for _, x := range us {
+		y := fmt.Sprintf("%s/users/%s/repos%s", apiURL, x, opts)
+		urls = append(urls, y)
 	}
 
 	return urls, nil
@@ -104,14 +99,14 @@ func getAuth(token string, tokenFile string) (string, error) {
 
 	if token != "" {
 		return token, nil
-	} else if tokenFile != "" {
+	}
+	if tokenFile != "" {
 		b, err := ioutil.ReadFile(tokenFile)
 		if err != nil {
 			return "", err
 		}
 		return strings.TrimSpace(string(b)), err
-
 	}
 
-	return "", nil
+	return "", errors.New("")
 }

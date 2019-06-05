@@ -7,11 +7,9 @@ import (
 
 // Describe - loops through the API metrics and passes them to prometheus.Describe
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-
 	for _, m := range e.APIMetrics {
 		ch <- m
 	}
-
 }
 
 // Collect function, called on by Prometheus Client library
@@ -27,12 +25,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// Set prometheus gauge metrics using the data gathered
-	err = e.processMetrics(data, rates, ch)
-
-	if err != nil {
-		log.Error("Error Processing Metrics", err)
-		return
-	}
+	e.processMetrics(data, rates, ch)
 
 	log.Info("All Metrics successfully collected")
 

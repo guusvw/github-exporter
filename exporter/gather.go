@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -25,11 +26,15 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 		// This code checks handles this variation.
 		if isArray(response.body) {
 			ds := []*Datum{}
-			json.Unmarshal(response.body, &ds)
+			if err := json.Unmarshal(response.body, &ds); err != nil {
+				return nil, nil, err
+			}
 			data = append(data, ds...)
 		} else {
 			d := new(Datum)
-			json.Unmarshal(response.body, &d)
+			if err := json.Unmarshal(response.body, &d); err != nil {
+				return nil, nil, err
+			}
 			data = append(data, d)
 		}
 
@@ -41,6 +46,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 
 	if err != nil {
 		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
+		return nil, nil, errors.New("")
 	}
 
 	//return data, rates, err
@@ -57,7 +63,7 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 
 	resp, err := getHTTPResponse(url, token)
 	if err != nil {
-		return &RateLimits{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 

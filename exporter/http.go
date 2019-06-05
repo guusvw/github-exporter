@@ -32,21 +32,16 @@ func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 
 	}
 
-	for {
-		select {
-		case r := <-ch:
-			if r.err != nil {
-				log.Errorf("Error scraping API, Error: %v", r.err)
-				break
-			}
-			responses = append(responses, r)
-
-			if len(responses) == len(targets) {
-				return responses, nil
-			}
+	for r := range ch {
+		if r.err != nil {
+			log.Errorf("Error scraping API, Error: %v", r.err)
+			break
 		}
+		responses = append(responses, r)
 
 	}
+
+	return responses, nil
 }
 
 // paginateTargets returns all pages for the provided targets

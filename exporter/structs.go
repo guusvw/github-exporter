@@ -3,7 +3,7 @@ package exporter
 import (
 	"net/http"
 
-	"github.com/infinityworks/github-exporter/config"
+	"github.com/guusvw/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
