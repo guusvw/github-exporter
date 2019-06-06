@@ -12,7 +12,7 @@ import (
 	"github.com/tomnomnom/linkheader"
 )
 
-func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
+func asyncHTTPGets(targets []string, token string) []*Response {
 	// Expand targets by following GitHub pagination links
 	targets = paginateTargets(targets, token)
 
@@ -41,7 +41,7 @@ func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 
 	}
 
-	return responses, nil
+	return responses
 }
 
 // paginateTargets returns all pages for the provided targets
@@ -92,7 +92,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	resp, err := getHTTPResponse(url, token) // do this earlier
 
 	if err != nil {
-		return fmt.Errorf("Error converting body to byte array: %v", err)
+		return fmt.Errorf("error converting body to byte array: %v", err)
 	}
 
 	// Read the body to a byte array so it can be used elsewhere
@@ -101,12 +101,12 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	defer resp.Body.Close()
 
 	if err != nil {
-		return fmt.Errorf("Error converting body to byte array: %v", err)
+		return fmt.Errorf("error converting body to byte array: %v", err)
 	}
 
 	// Triggers if a user specifies an invalid or not visible repository
-	if resp.StatusCode == 404 {
-		return fmt.Errorf("Error: Received 404 status from Github API, ensure the repsository URL is correct. If it's a privare repository, also check the oauth token is correct")
+	if resp.StatusCode == http.StatusNotFound {
+		return fmt.Errorf("error: Received 404 status from Github API, ensure the repsository URL is correct. If it's a privare repository, also check the oauth token is correct")
 	}
 
 	ch <- &Response{url, resp, body, err}
@@ -121,7 +121,7 @@ func getHTTPResponse(url string, token string) (*http.Response, error) {
 		Timeout: time.Second * 10,
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func getHTTPResponse(url string, token string) (*http.Response, error) {
 
 	// If a token is present, add it to the http.request
 	if token != "" {
-		req.Header.Add("Authorization", "token "+token)
+		req.Header.Add("Authorization", fmt.Sprintf("token %s", token))
 	}
 
 	resp, err := client.Do(req)

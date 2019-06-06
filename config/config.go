@@ -37,13 +37,13 @@ func Init() Config {
 	token, err := getAuth(tokenEnv, tokenFile)
 
 	if err != nil {
-		log.Errorf("Error initialising Configuration, Error: %v", err)
+		log.Errorf("Error initializing Configuration, Error: %v", err)
 	}
 
 	scraped, err := getScrapeURLs(url, repos, orgs, users)
 
 	if err != nil {
-		log.Errorf("Error initialising Configuration, Error: %v", err)
+		log.Errorf("Error initializing Configuration, Error: %v", err)
 	}
 
 	return Config{
@@ -66,9 +66,9 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 
 	opts := "?&per_page=100" // Used to set the Github API to return 100 results per page (max)
 
-	// User input validation, check that either repositories or organisations have been passed in
+	// User input validation, check that either repositories or organizations have been passed in
 	if len(repos) == 0 && len(orgs) == 0 && len(users) == 0 {
-		return urls, fmt.Errorf("No targets specified")
+		return urls, fmt.Errorf("no targets specified")
 	}
 
 	// Append repositories to the array
@@ -78,7 +78,7 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 		urls = append(urls, y)
 	}
 
-	// Append github orginisations to the array
+	// Append github organizations to the array
 	o := strings.Split(orgs, ", ")
 	for _, x := range o {
 		y := fmt.Sprintf("%s/orgs/%s/repos%s", apiURL, x, opts)

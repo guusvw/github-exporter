@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
@@ -14,11 +15,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 
 	data := []*Datum{}
 
-	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
-
-	if err != nil {
-		return data, nil, err
-	}
+	responses := asyncHTTPGets(e.TargetURLs, e.APIToken)
 
 	for _, response := range responses {
 
@@ -68,26 +65,26 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 	defer resp.Body.Close()
 
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
-	if resp.StatusCode == 404 {
-		return &RateLimits{}, fmt.Errorf("Rate Limiting not enabled in GitHub API")
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("rate Limiting not enabled in GitHub API")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
 
 	if err != nil {
-		return &RateLimits{}, err
+		return nil, err
 	}
 
 	rem, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Remaining"), 64)
 
 	if err != nil {
-		return &RateLimits{}, err
+		return nil, err
 	}
 
 	reset, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Reset"), 64)
 
 	if err != nil {
-		return &RateLimits{}, err
+		return nil, err
 	}
 
 	return &RateLimits{
